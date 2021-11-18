@@ -18,26 +18,22 @@ package com.github.bholten.ksm.streams
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.streams.KafkaStreams
-import org.apache.kafka.streams.KafkaStreams.State
+import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler
 
 class DefaultStartupHandler extends StreamsStartupHandler with LazyLogging {
-  override def beforeStart(streams: KafkaStreams, k: Either[Throwable, Unit] => Unit): Unit = {
-    streams.setUncaughtExceptionHandler { (_: Thread, e: Throwable) =>
-      logger.error(s"Kafka Streams caught on exception ${e.getMessage}")
-      logger.debug(
-        s"Kafka Streams stacktrace: ${e.getStackTrace.mkString("Array(", ", ", ")")}"
-      )
-      k(Left(e))
-    }
-
-    streams.setStateListener { (state: State, _: State) =>
-      state match {
-        case State.ERROR =>
-          k(Left(new RuntimeException("KafkaStreams went into an ERROR state.")))
-        case _ => ()
+  override def beforeStart(streams: KafkaStreams, cb: Either[Throwable, Unit] => Unit): Unit = {
+    streams.setUncaughtExceptionHandler(new StreamsUncaughtExceptionHandler {
+      override def handle(
+          exception: Throwable
+      ): StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse = {
+        logger.error(s"Kafka Streams caught on exception ${exception.getMessage}")
+        logger.debug(
+          s"Kafka Streams stacktrace: ${exception.getStackTrace.mkString("Array(", ", ", ")")}"
+        )
+        StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse.SHUTDOWN_APPLICATION
       }
-    }
+    })
 
-    k(Right(streams.start()))
+    streams.start()
   }
 }

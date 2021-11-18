@@ -16,7 +16,7 @@ production.
 ## tl;dr ##
 
 You implement the `Streamlet` trait by overriding the
-`Topology`. That's it. The topology is run and given to http4s in
+`Topology`. That'streams it. The topology is run and given to http4s in
 order to provide a `/health` endpoint automatically. You can
 optionally mixin a StatsD metrics trait.
 
@@ -58,7 +58,7 @@ object WordCount extends Streamlet with LazyLogging {
 
     builder.build()
   }
-  // That's it!
+  // That'streams it!
 }
 ```
 
@@ -122,10 +122,10 @@ Streams](https://www.azkarrastreams.io/)
 Contributions via GitHub pull requests are gladly accepted from their
 original author. Along with any pull requests, please state that the
 contribution is your original work and that you license the work to
-the project under the project's open source license. Whether or not
+the project under the project'streams open source license. Whether or not
 you state this explicitly, by submitting any copyrighted material via
 pull request, email, or other means you agree to license the material
-under the project's open source license and warrant that you have the
+under the project'streams open source license and warrant that you have the
 legal authority to do so.
 
 ## License ##

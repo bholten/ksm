@@ -16,7 +16,7 @@
 
 package com.github.bholten.ksm
 
-import cats.effect.{ ExitCode, IO, IOApp }
+import cats.effect.{ ExitCode, IO, IOApp, Resource, SyncIO }
 import com.github.bholten.ksm.config.StreamletConfig
 import com.github.bholten.ksm.http.HttpServer
 import com.github.bholten.ksm.streams.StreamletContext
@@ -25,15 +25,17 @@ import org.http4s.server.blaze.BlazeServerBuilder
 
 import scala.concurrent.ExecutionContext
 
-trait Streamlet extends IOApp {
+trait Streamlet extends IOApp.WithContext {
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
+  override protected def executionContextResource: Resource[SyncIO, ExecutionContext] =
+    Resource.liftF(SyncIO(ec))
   val topology: Topology
 
   override def run(args: List[String]): IO[ExitCode] =
     for {
       conf <- StreamletConfig.loadDefault
       streams = StreamletContext(topology, conf)
-      _ <- StreamletContext.run[IO](streams).start
+      _ <- streams.run[IO].start
       server <-
         BlazeServerBuilder[IO](ec)
           .bindHttp(conf.httpConfig.port, conf.httpConfig.host)

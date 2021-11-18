@@ -17,7 +17,6 @@ inThisBuild(
       "UTF-8",
       "-Ywarn-unused:imports",
     ),
-    resolvers += "Confluent" at "https://packages.confluent.io/maven/",
     testFrameworks += new TestFramework("munit.Framework"),
     scalafmtOnCompile := true,
     dynverSeparator := "_", // the default `+` is not compatible with docker tags
@@ -54,6 +53,25 @@ lazy val examples =
       )
     )
     .dependsOn(streamlet)
+
+lazy val serdes =
+  project
+    .enablePlugins(AutomateHeaderPlugin)
+    .settings(commonSettings)
+    .settings(
+      name := "serdes",
+      resolvers += "confluent" at "https://packages.confluent.io/maven/"
+    )
+    .settings(
+      libraryDependencies ++= Seq(
+        library.circeCore,
+        library.circeParser,
+        library.circeGeneric,
+        library.circeOptics,
+        library.confluentSchemaRegistryClient,
+        library.kafka
+      )
+    )
 
 lazy val streamlet =
   project
@@ -114,6 +132,7 @@ lazy val library =
       val circe        = "0.13.0"
       val cats         = "2.3.1"
       val statsD       = "2.10.5"
+      val confluent    = "6.2.1"
     }
     val munit           = "org.scalameta" %% "munit"            % Version.munit
     val munitScalaCheck = "org.scalameta" %% "munit-scalacheck" % Version.munit
@@ -131,6 +150,10 @@ lazy val library =
     val circeGeneric = "io.circe" %% "circe-generic" % Version.circe
     val circeParser  = "io.circe" %% "circe-parser"  % Version.circe
     val circeOptics  = "io.circe" %% "circe-optics"  % Version.circe
+
+    // Confluent
+    val confluentSchemaRegistryClient =
+      "io.confluent" % "kafka-schema-registry-client" % Version.confluent
 
     // Kafka
     val kafka        = "org.apache.kafka" %% "kafka"               % Version.kafka
@@ -150,6 +173,6 @@ lazy val library =
     val scalaTest        = "org.scalatest"           %% "scalatest"                % "3.1.2"
     val kafkaStreamsTest = "org.apache.kafka"         % "kafka-streams-test-utils" % Version.kafka
     val scalaCheck       = "org.scalacheck"          %% "scalacheck"               % "1.14.3"
-    val embeddedKafka    = "io.github.embeddedkafka" %% "embedded-kafka"           % "2.5.1" // TODO
+    val embeddedKafka    = "io.github.embeddedkafka" %% "embedded-kafka"           % "2.8.1" // TODO
     val catsEffectLaws   = "org.typelevel"           %% "cats-effect-laws"         % Version.cats
   }

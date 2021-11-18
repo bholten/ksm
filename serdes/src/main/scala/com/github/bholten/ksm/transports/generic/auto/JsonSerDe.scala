@@ -1,5 +1,10 @@
 package com.github.bholten.ksm.transports.generic.auto
 
+import io.circe._
+import io.circe.parser._
+import org.apache.kafka.common.errors.SerializationException
+import org.apache.kafka.common.serialization.{ Deserializer, Serde, Serdes, Serializer }
+
 import java.nio.charset.StandardCharsets
 import java.util
 
@@ -23,7 +28,7 @@ object JsonSerDe {
           .fold(null.asInstanceOf[T]) { data =>
             decode[T](new String(data, StandardCharsets.UTF_8))
               .fold(error => throw new SerializationException(error), identity)
-        }
+          }
 
       override def close(): Unit = ()
     }

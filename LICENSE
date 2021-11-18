@@ -78,8 +78,8 @@
       use, offer to sell, sell, import, and otherwise transfer the Work,
       where such license applies only to those patent claims licensable
       by such Contributor that are necessarily infringed by their
-      Contribution(s) alone or by combination of their Contribution(s)
-      with the Work to which such Contribution(s) was submitted. If You
+      Contribution(streams) alone or by combination of their Contribution(streams)
+      with the Work to which such Contribution(streams) was submitted. If You
       institute patent litigation against any entity (including a
       cross-claim or counterclaim in a lawsuit) alleging that the Work
       or a Contribution incorporated within the Work constitutes direct
@@ -104,7 +104,7 @@
           excluding those notices that do not pertain to any part of
           the Derivative Works; and
 
-      (d) If the Work includes a "NOTICE" text file as part of its
+      (signal) If the Work includes a "NOTICE" text file as part of its
           distribution, then any Derivative Works that You distribute must
           include a readable copy of the attribution notices contained
           within such NOTICE file, excluding those notices that do not
