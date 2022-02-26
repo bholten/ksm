@@ -4,9 +4,9 @@
 
 inThisBuild(
   Seq(
-    organization := "com.github.bholten.ksm",
+    organization := "bholten",
     organizationName := "Brennan Holten",
-    startYear := Some(2021),
+    startYear := Some(2022),
     licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
     scalaVersion := "2.13.5",
     scalacOptions ++= Seq(
@@ -20,6 +20,7 @@ inThisBuild(
     testFrameworks += new TestFramework("munit.Framework"),
     scalafmtOnCompile := true,
     dynverSeparator := "_", // the default `+` is not compatible with docker tags
+    parallelExecution := false
   )
 )
 
@@ -54,25 +55,6 @@ lazy val examples =
     )
     .dependsOn(streamlet)
 
-lazy val serdes =
-  project
-    .enablePlugins(AutomateHeaderPlugin)
-    .settings(commonSettings)
-    .settings(
-      name := "serdes",
-      resolvers += "confluent" at "https://packages.confluent.io/maven/"
-    )
-    .settings(
-      libraryDependencies ++= Seq(
-        library.circeCore,
-        library.circeParser,
-        library.circeGeneric,
-        library.circeOptics,
-        library.confluentSchemaRegistryClient,
-        library.kafka
-      )
-    )
-
 lazy val streamlet =
   project
     .enablePlugins(AutomateHeaderPlugin)
@@ -85,23 +67,28 @@ lazy val streamlet =
         library.kafka,
         library.kafkaStreams,
         library.config,
-        library.cats,
         library.catsEffect,
         library.statsD,
         library.httpsDsl,
         library.httpsCore,
         library.httpsCirce,
         library.httpsServer,
-        library.httpsBlazeServer,
+        library.httpsEmberServer,
         library.circeCore,
         library.circeParser,
         library.circeGeneric,
-        library.scalaTest       % Test,
-        library.catsEffectLaws  % Test,
-        library.embeddedKafka   % Test,
-        library.munit           % Test,
-        library.munitScalaCheck % Test,
+        library.scalaTest           % Test,
+        library.logback             % Test,
+        library.embeddedKafka       % Test,
+        library.munit               % Test,
+        library.munitScalaCheck     % Test,
+        library.munitCatsEffect     % Test,
+        library.weaverKats          % Test,
+        library.scalaTestCatsEffect % Test
       )
+    )
+    .settings(
+      testFrameworks += new TestFramework("munit.Framework")
     )
 
 // *****************************************************************************
@@ -124,55 +111,39 @@ lazy val commonSettings =
 lazy val library =
   new {
     object Version {
-      val munit        = "0.7.19"
-      val scalaLogging = "3.9.2"
-      val logback      = "1.1.7"
-      val config       = "1.4.1"
-      val kafka        = "2.8.1"
-      val circe        = "0.13.0"
-      val cats         = "2.3.1"
-      val statsD       = "2.10.5"
-      val confluent    = "6.2.1"
+      val munit           = "0.7.19"
+      val munitCatsEffect = "1.0.7"
+      val scalaLogging    = "3.9.2"
+      val logback         = "1.1.7"
+      val config          = "1.4.1"
+      val kafka           = "2.8.1"
+      val circe           = "0.14.1"
+      val catsEffect      = "3.3.5"
+      val http4s          = "0.23.9"
+      val statsD          = "2.10.5"
     }
-    val munit           = "org.scalameta" %% "munit"            % Version.munit
-    val munitScalaCheck = "org.scalameta" %% "munit-scalacheck" % Version.munit
-
-    val scalaLogging = "com.typesafe.scala-logging" %% "scala-logging"   % Version.scalaLogging
-    val logback      = "ch.qos.logback"              % "logback-classic" % Version.logback
-    val config       = "com.typesafe"                % "config"          % Version.config
-
-    // Cats
-    val cats       = "org.typelevel" %% "cats-core"   % Version.cats
-    val catsEffect = "org.typelevel" %% "cats-effect" % Version.cats
-
-    // Circe (JSON)
-    val circeCore    = "io.circe" %% "circe-core"    % Version.circe
-    val circeGeneric = "io.circe" %% "circe-generic" % Version.circe
-    val circeParser  = "io.circe" %% "circe-parser"  % Version.circe
-    val circeOptics  = "io.circe" %% "circe-optics"  % Version.circe
-
-    // Confluent
-    val confluentSchemaRegistryClient =
-      "io.confluent" % "kafka-schema-registry-client" % Version.confluent
-
-    // Kafka
-    val kafka        = "org.apache.kafka" %% "kafka"               % Version.kafka
-    val kafkaStreams = "org.apache.kafka" %% "kafka-streams-scala" % Version.kafka
-
-    // http4s
-    val httpsDsl         = "org.http4s" %% "http4s-dsl"          % "0.21.15"
-    val httpsBlazeServer = "org.http4s" %% "http4s-blaze-server" % "0.21.15"
-    val httpsCirce       = "org.http4s" %% "http4s-circe"        % "0.21.15"
-    val httpsCore        = "org.http4s" %% "http4s-core"         % "0.21.15"
-    val httpsServer      = "org.http4s" %% "http4s-server"       % "0.21.15"
-
-    // StatsD
-    val statsD = "com.datadoghq" % "java-dogstatsd-client" % Version.statsD
-
+    val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"         % Version.scalaLogging
+    val logback          = "ch.qos.logback"              % "logback-classic"       % Version.logback
+    val config           = "com.typesafe"                % "config"                % Version.config
+    val catsEffect       = "org.typelevel"              %% "cats-effect"           % Version.catsEffect
+    val circeCore        = "io.circe"                   %% "circe-core"            % Version.circe
+    val circeGeneric     = "io.circe"                   %% "circe-generic"         % Version.circe
+    val circeParser      = "io.circe"                   %% "circe-parser"          % Version.circe
+    val kafka            = "org.apache.kafka"           %% "kafka"                 % Version.kafka
+    val kafkaStreams     = "org.apache.kafka"           %% "kafka-streams-scala"   % Version.kafka
+    val httpsDsl         = "org.http4s"                 %% "http4s-dsl"            % Version.http4s
+    val httpsEmberServer = "org.http4s"                 %% "http4s-ember-server"   % Version.http4s
+    val httpsCirce       = "org.http4s"                 %% "http4s-circe"          % Version.http4s
+    val httpsCore        = "org.http4s"                 %% "http4s-core"           % Version.http4s
+    val httpsServer      = "org.http4s"                 %% "http4s-server"         % Version.http4s
+    val statsD           = "com.datadoghq"               % "java-dogstatsd-client" % Version.statsD
     // Testing
-    val scalaTest        = "org.scalatest"           %% "scalatest"                % "3.1.2"
-    val kafkaStreamsTest = "org.apache.kafka"         % "kafka-streams-test-utils" % Version.kafka
-    val scalaCheck       = "org.scalacheck"          %% "scalacheck"               % "1.14.3"
-    val embeddedKafka    = "io.github.embeddedkafka" %% "embedded-kafka"           % "2.8.1" // TODO
-    val catsEffectLaws   = "org.typelevel"           %% "cats-effect-laws"         % Version.cats
+    val munit               = "org.scalameta"           %% "munit"                         % Version.munit
+    val munitScalaCheck     = "org.scalameta"           %% "munit-scalacheck"              % Version.munit
+    val munitCatsEffect     = "org.typelevel"           %% "munit-cats-effect-3"           % Version.munitCatsEffect
+    val scalaTest           = "org.scalatest"           %% "scalatest"                     % "3.1.2"
+    val scalaTestCatsEffect = "org.typelevel"           %% "cats-effect-testing-scalatest" % "1.4.0"
+    val kafkaStreamsTest    = "org.apache.kafka"         % "kafka-streams-test-utils"      % Version.kafka
+    val embeddedKafka       = "io.github.embeddedkafka" %% "embedded-kafka"                % "2.8.1"
+    val weaverKats          = "com.disneystreaming"     %% "weaver-cats"                   % "0.6.9"
   }
