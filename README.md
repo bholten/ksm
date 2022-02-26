@@ -16,7 +16,7 @@ production.
 ## tl;dr ##
 
 You implement the `Streamlet` trait by overriding the
-`Topology`. That'streams it. The topology is run and given to http4s in
+`Topology`. That's it. The topology is run and given to http4s in
 order to provide a `/health` endpoint automatically. You can
 optionally mixin a StatsD metrics trait.
 
@@ -70,52 +70,58 @@ multiple interfaces to implement -- just a `Topology` value.
 
 See the `examples/` directory.
 
-## Rationale ##
+## FAQ ##
 
-I've worked as a consultant on several dozen Kafka Streams projects,
-and my experience both developing and teaching how to do event-driven
-Kafka Streams architectures comes down to a few principles, which
-we've attempted to address with **ksm**:
+Q: I want to customize the http4s endpoint.
 
-- Keep it as simple as possible
-- Just use the plain Kafka Streams DSL and Processor APIs, don't try
-  to invent your own DSL
-- The stream-processing should only do stream-processing; no mixing
-  other RPC
-- One topology per application
-- Follow 12-factor
-- Use the container runtime (Kubernetes, OpenShift) to manage the
-  health and lifecycle of the application; don't get fancy with
-  supervision strategies, etc. when health checks and metrics will
-  suffice
-- Keep it as simple as possible!
+A: Overwrite the `routes` value when implementing `Streamlet`.
 
-That being said, there are situations where you'll need to break some
-of these rules. For example, mixing RPC will be necessary if you need
-to enrich data in Kafka with some external procedure call, for example
-in a database or REST call. Or, you will want to expose some REST
-endpoint for doing operations on the stream-processor while messages
-are in-flight. **ksm** does not try to address these situations. It
-does not try to be good at *everything*.
+The `routes` value is of type `KafkaRoutes[F[_]]` and is intended to
+provide a health check; however, you can extend it to provide access
+to a state store or whatever else.
 
-These situations are valid and necessary, however they will likely be
-on the edges for your system. Furthermore, there are plenty of fine
-frameworks that already work excellent in these situations -- for
-Scala, my favorite is Akka.
+The trait is very simple:
+
+``` scala
+trait KafkaRoutes[F[_]] {
+  def routes(handler: StreamHandler[F]): HttpRoutes[F]
+}
+```
+
+Q: I want to customize the Kafka Streams startup handler.
+
+A: Overwrite the `beforeStart` value when implementing `Streamlet`.
+
+The `beforeStart` value is a `StartupHandler` that runs before the
+`KafkaStreams` object is started. The default is `KafkaFailFast`,
+which sets the uncaught exception handler to `SHUTDOWN_APPLICATION`.
+
+The `StartupHandler` trait is also very simple:
+
+``` scala
+trait StartupHandler {
+  def beforeStart(kafkaStreams: KafkaStreams): KafkaStreams
+}
+```
 
 ## Roadmap ##
+
+Biggest thing now is to improve testing. I pretty much re-wrote
+everything from Cats Effect 3, and the tests are a major
+work-in-progress and frankly the only thing holding me back from
+publishing artifacts.
+
+There is some effort to "Catsify" this more and make it easier to
+integrate into larger, Typelevel-style applications.
+
+The initial design was highly pragmatic and open sourced from a
+client; however, this should make it more extensible. That said, I do
+wish to keep the Typelevel ecosystem relatively opaque for users just
+implementing topologies.
 
 - More mixins, e.g. Prometheus
 - More configurable http4s
 - More endpoints, e.g. resume failed tasks, querable state stores
-
-## I want a Java version ##
-
-I don't have plans to support Java.
-
-However, a Java framework with a similar philosophy (albeit much
-heavier) is the excellent [Azkarra
-Streams](https://www.azkarrastreams.io/)
 
 ## Contribution policy ##
 
